@@ -1,0 +1,57 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{textcomp}
+\usepackage{url}
+\usepackage{color}
+\usepackage{pbox}
+\usepackage{multirow}
+\usepackage[style=base, font=footnotesize, labelfont={sf,bf}, margin=0cm]{caption}
+\newcommand{\todo}[1]{{ (\textbf{TODO:} #1)}}
+\definecolor{darkgreen}{RGB}{255, 127, 0}
+\newcommand{\modify}[1]{{#1}}
+\newcommand{\newlymodify}[1]{{#1}}
+% \newcommand{\modify}[1]{{#1}}
+\newcommand{\remove}[1]{{}}
+\ifCLASSINFOpdf
+\else
+\fi
+\begin{document}
+
+\section{System Model}
+The probability density function of an exponential distribution is expressed by
+\begin{equation}\label{eqn_exp}
+ f(t) = \lambda e^{- \lambda t} , t \geq 0 
+\end{equation}\label{eqn_gmm}where $\lambda$ is the rate parameter and mean value is $\frac{1}{\lambda}$. The GMM used for modeling of time-varying rate parameter is given by 
+\begin{equation}
+ \lambda = \displaystyle\sum_{i=1}^{n} a_{i} e^{-\left( \frac{t-b_{i}}{c_{i}} \right)^2 } 
+\end{equation}
+\noindent where $a_{i}$ is the amplitude, $b_{i}$ is centroid location, $c_{i}$ is the peak width, $n$ represents number of peaks in data series and $t$ is any time instant in 24 hours of the day. Using these two models, we generated snapshots of spatial loads on each of RRHs of whole network under study for a given time instant.
+ The total power consumed at any active BBU at time instant $t$ is
+\begin{equation}
+ P_{BBU_t} = P_{BB} + \displaystyle\sum_{i=1}^{n} P_{RRH_i} 
+\end{equation}
+\noindent where $P_{BB}$ is power consumed by that particular BBU and $\sum_{i=1}^{n} P_{RRH_i}$ is sum of the power consumed by all the RRHs associated with that particular BBU at time $t$. The power consumed by a specified RRH is given by
+\begin{equation}
+ P_{RRH} = \left(\frac{P_{r}}{E_{pa}}\right) + (P_{rf} \times N_{tx})
+\end{equation}
+\noindent where $P_{r}$ is the radiated power, $E_{pa}$ is the power amplifier efficiency, $P_{rf}$ is the power used by RF circuits and $N_{tx}$ is the number of transceiver antennas.\\
+
+\texttt{Constraints:}
+\begin{equation}\label{eqn_cons1}
+ \scriptstyle \displaystyle \sum\limits_{m=1}^{|\textit{M}|} y_{im} = 1, \hspace{0.5cm} \forall i \in \textit{N}
+\end{equation}
+\begin{equation}\label{eqn_cons2}
+ \scriptstyle \displaystyle \sum\limits_{i=1}^{|\textit{N}|} y_{im} \times l_{i} \leq l_{max} \times z_{m}, \hspace{0.5cm} \forall m \in \textit{M}\\
+\end{equation}
+The constraint in Eqn.~\ref{eqn_cons1} ensures the fact that each RRH is associated with exactly one BBU, and Eqn.~\ref{eqn_cons2} ensures that the sum of loads from RRHs associated to a BBU does not exceed the BBU peak capacity. Using the RRH load model given in Section II, we propose a novel heuristic method, DRA in Section II and highlight its benefits in comparison with FFD.
+%\bibliographystyle{IEEEtran}
+%\bibliography{references}
+
+\end{document}

@@ -1,0 +1,496 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{textcomp}
+\usepackage{url}
+\usepackage{color}
+\usepackage{pbox}
+\usepackage{multirow}
+\usepackage[style=base, font=footnotesize, labelfont={sf,bf}, margin=0cm]{caption}
+\newcommand{\todo}[1]{{ (\textbf{TODO:} #1)}}
+\newcommand{\newly}[1]{{  #1}}
+\definecolor{darkgreen}{RGB}{255, 127, 0}
+\newcommand{\modify}[1]{{#1}}
+\newcommand{\newlymodify}[1]{{#1}}
+% \newcommand{\modify}[1]{{#1}}
+\newcommand{\remove}[1]{{}}
+\ifCLASSINFOpdf
+\else
+\fi
+\begin{document}
+
+\title{Architectural Challenges and Solutions for Collocated LWIP - A Network Layer Perspective}
+%\title{Performance Evaluation of\\ Link Aggregation Strategies in LWIP}
+%\title{Implementation and Evaluation of Link Aggregation in LTE/Wi-Fi Networks - LWA Module for NS3}
+
+\author{\IEEEauthorblockN{Thomas Valerrian Pasca, Amogh PC, Debashisha Mishra, Nagamani Dheeravath, Anil Kumar Rangisetti, \\Bheemarjuna Reddy Tamma and Antony Franklin A}
+
+\IEEEauthorblockA{Department of Computer Science and Engineering, Indian Institute of Technology Hyderabad, India\\
+Email:[cs13p1002, cs15mtech01002, cs15mtech01003, cs11b011, cs12p1001,  tbr, antony.franklin]@iith.ac.in}}
+\maketitle
+
+\begin{abstract}
+Achieving a tighter level of aggregation between LTE and Wi-Fi networks at the radio access network (a.k.a. LTE-Wi-Fi Aggregation or LWA) has become one of the most prominent solutions in the era of 5G to boost network capacity and improve end user\textquotesingle s quality of experience. LWA offers flexible resource scheduling decisions for steering user traffic via LTE and Wi-Fi links. In this work, we propose a collocated LTE/WLAN Radio Level Integration architecture at IP layer (C-LWIP) and enumerated its potential over 3GPP non-collocated LWIP architecture.  We have evaluated C-LWIP performance in various link aggregation strategies (LASs). A C-LWIP node (\emph{i.e.}, the node having  collocated, aggregated LTE eNodeB and Wi-Fi access point functionalities) is implemented in NS-3 which introduces a traffic steering layer (\emph{i.e.}, Link Aggregation Layer) for efficient integration of LTE and Wi-Fi. Using extensive simulations, we verified the correctness of C-LWIP module in NS-3 and evaluated the aggregation benefits over standalone LTE and Wi-Fi networks with respect to varying number of users and traffic types. We found that split bearer performs equivalently to switched bearer for UDP flows and switched bearer outperforms split bearer in the case of TCP flows. Also, we have enumerated the potential challenges to be addressed for unleashing C-LWIP capabilities. Our findings also include WoD-Link Aggregation Strategy has improved system throughput by 50\% as compared to N-LAS in a densely populated indoor stadium environment. % An analytical model validating the performance improvement of the Wi-Fi only in Downlink (WoD-LAS) as compared to Naive Link Aggregation Strategy (N-LAS) is also given.
+
+%The scarcity of licensed spectrum resources and the demand for high data rates for mobile applications has pushed the telecommunication service providers to adapt innovatively and cost effective cellular architectures. One of such efforts is aligned to leverage the integration benefits of unlicensed Wi-Fi operation with LTE networks.
+%, thereby supporting future generation mobile standards to boost network capacity and improve end user’s quality of experience. Third Generation Partnership Project (3GPP) has uncovered many study items to industry and academia related to the interworking of LTE and Wi-Fi radio access technologies as a prominent methodology and a key enabler for 4G/5G network evolution. Following the standardization work of LTE and Wi-Fi interworking at Packet Data Network Gateway (P-GW), 3GPP is currently looking at the tighter level of integration at link level. 3GPP has referred this approach as LTE-Wi-Fi Aggregation (LWA) to realize tighter degree of integration at radio access network level. 
+%In this work, we developed an LWA module in NS-3 simulator and used it to evaluate interworking benefits of various link aggregation strategies (LASs) which seamlessly steer IP traffic between LTE and Wi-Fi interfaces. LWIP node (\emph{i.e.}, node having  collocated, aggregated LTE eNodeB and Wi-Fi access point functionalities) introduces a Link Aggregation Layer (LAL) for efficient integration at IP level and does not impose any protocol level modification for the end user devices. Using extensive simulations, we verify correctness of LWA module in NS-3 and evaluate its performance with respect to varying number of users and traffic types.   
+\end{abstract}
+\IEEEpeerreviewmaketitle
+
+%{\bf Keywords:} LTE-Wi-Fi Aggregation, LAS, LWA, Traffic steering, Interworking, Link Aggregation, NS-3
+
+\section{Introduction}
+\label{sec:intro}
+% This subsection lays the generic the background to the paper
+\par The penetration of multi-featured electronic gadgets such as smart phones, tablets, laptops in the market and popularity of mobile applications (native and web) developed for these devices have significantly increased the data traffic demand from mobile subscribers. Smart phones generate approximately $819$ MB of data per month which is $37$ times of the data generated by a basic cell phone supporting limited voice calls and SMS~\cite{cicso_vni}. Also, mobile data traffic growth will remain to increase and reach $291.8$ Exabytes by $2019$ compared to $30.3$ Exabytes in $2014$. However, the telecommunication service providers/operators face many challenges in order to improve their cellular network capacities to match these ever increasing data demands due to low, almost flat Average Revenue Per User (ARPU) and low Return on Investment (RoI). Spectrum resource crunch and licensing requirement for operation in cellular bands further complicate the procedure to support and manage the network. 
+
+% This subsection introduces the need for the interworking with Wi-Fi and ongoing works
+\par In order to deal with aforementioned challenges, one of the most vital solutions is to leverage the integration benefits of cellular base stations (BSs) with unlicensed operation of Wi-Fi Access Points (APs). A closer level of cellular and Wi-Fi coupling/interworking  improves Quality of Service (QoS) by unified connection management to user devices. It also offloads a significant portion of user traffic from cellular BS to Wi-Fi APs. Hence, operators could easily deploy cost-effective solutions to offer attractive data rates for their subscribers. 3GPP~\cite{thirdgpp} defined various LTE and Wi-Fi interworking strategies starting from Rel.8. 
+%as shown in Table \ref{tab:3gppwork}. From Rel.8 to Rel.12, 3GPP network components are connected to non-3GPP access network through a standard interface.
+
+In Rel.13, Network Based IP Flow Mobility (NB-IFOM) and LTE-Wi-Fi aggregation (LWA) are standardized for efficient LTE/Wi-Fi interworking. In NB-IFOM, Wi-Fi is brought into operator's network either as trusted or untrusted non-3GPP access. P-GW or user equipment (UE) decide mapping between traffic flows and access links (\emph{e.g.,} LTE or Wi-Fi) dynamically. We investigated a collocated LTE/Wi-Fi scenario (C-LWIP) in which LTE small cell eNodeB (SeNB) and Wi-Fi AP are tightly coupled at RAN level as shown in Fig.~\ref{fig:intro}. LTE/WLAN Radio Level Integration has following advantages: 
+\begin{itemize}
+\item Wi-Fi operations are controlled directly via SeNB inside C-LWIP node. LTE core network (\emph{i.e.}, Evolved Packet Core (EPC)) need not manage Wi-Fi separately.
+\item Radio level integration allows effective radio resource management across Wi-Fi and LTE links.
+\item LTE acts as the licensed-anchor point for any UE, providing unified connection management with the network.
+\end{itemize}
+% \begin{table}[b]
+% \centering
+% \caption{3GPP Interworking Considerations}
+% \renewcommand{\arraystretch}{1.0}
+% \begin{tabular}{|l|l|} \hline 
+% \label{tab:3gppwork}
+% \textbf{\hspace{-0.2cm} Release \#} & \textbf{\hspace{2cm} Outline}\\ [1ex]\hline 
+% Release 8 & PMIP based mobility and ANDSF\\ \hline
+% Release 9 & eANDSF\\ \hline
+% Release 10 & IP Flow mobility\\ \hline
+% Release 11 & \pbox{6cm}{Location based selection of gateway for WLAN}\\ \hline
+% Release 12 & \pbox{6cm}{WLAN network selection, Multiple \\ PDN connections and IP preservation}\\ \hline
+% \end{tabular}
+% \end{table}
+
+%LWA can be realized at different layers of LTE protocol stack. 3GPP is actively involved on standardizing aggregation at Packet Data Convergence Protocol (PDCP) layer of LTE eNodeB~\cite{R3151743}. 
+Aggregation can be realized either with tightly coupled eNodeB and Wi-Fi AP which are collocated or having a dedicated interface between standalone eNodeB and Wi-Fi AP in case of non-collocated scenario. Both collocated and non-collocated deployment support switched bearer and split bearer for traffic splitting across LTE and Wi-Fi. Switched bearer switches a bearer of a UE completely from LTE interface to Wi-Fi interface, whereas split bearer splits an existing bearer across LTE and Wi-Fi interfaces. Split bearer follows reordering procedure used in Dual Connectivity (DC)~\cite{TS36842}. 
+
+%\par The proposal of aggregation at PDCP layer needs protocol level modifications at both UE and eNodeB. 
+%The LWA architecture based on the DC architecture is shown in Fig. \ref{fig:3gpp} for collocated scenario. The purpose of making aggregation at PDCP layer is to achieve in-sequence delivery to higher layers, Robust Header Compression (RoHC) and encryption for packets sent through Wi-Fi interface. In-sequence delivery is required for aggregation, because in case of split bearer, the out-of-order packets have to be reassembled and delivered to the higher layer in-order. RoHC enhances the aggregation capacity by compressing the IP header of data packets which are sent through Wi-Fi interface. Encryption for data through Wi-Fi interface is provided by legacy LTE encryption function at PDCP layer and it removes the need for additional encryption mechanisms at Wi-Fi interface.
+\begin{figure}[t]
+\centering
+\epsfig{width=5cm, figure=images/into_IBX.pdf}
+\caption{A C-LWIP Realization.}
+\vspace{-0.6cm}
+\label{fig:intro}
+\end{figure}
+\section{Related Work}
+\label{sec:litSurvey}
+
+%In this section, some interesting works related to interworking of cellular and WLAN architectures and their offloading algorithms are briefly discussed.
+%
+%\newlymodify{
+%The authors in~\cite{6488515,sou2013mobile} proposed an interworking technique which sends QoS flows over 3G cellular network and background flows over Wi-Fi. In~\cite{DBLP:journals/corr/KangCSC14}, the authors solved the traffic offloading problem as an optimization problem which includes power spent and data charges incurred as parameters for offloading.} 
+%In~\cite{7060499}, the authors presented loosely coupled, tightly coupled, and hybrid architectures for LTE/Wi-Fi interworking. Loosely coupled integration of LTE/Wi-Fi is for non-collocated scenario. It is suggested that multipath TCP (MP-TCP) is used for integration of LTE and Wi-Fi. The intelligent decision for interworking has been taken at TCP layer. Nokia Networks proposed a new LWA adaptation layer for collocated LWA node. This new layer interworks with PDCP layer as shown in Fig.~\ref{fig:3gpp}. Qualcomm proposed LTE and Wi-Fi aggregation at RLC layer and they claim it performs better than MP-TCP~\cite{RP150180}. \\
+%\textbf{Contribution : }Our main contributions in this paper are given below.
+%\begin{itemize}
+%\item Design of LWA module in NS-3 simulator and validating its correctness through extensive simulations.
+%\item Using LWA model of NS-3 simulator, study, and evaluation of interworking benefits for different link aggregation strategies (LAS).
+%\item Experimental analysis of various link aggregation strategies leading to better operator service provisioning in real world environments by selecting a best suitable strategy.
+%\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%In this section, some interesting architectural proposal related to interworking of cellular and WLAN architectures and their offloading algorithms are briefly discussed.
+
+In~\cite{7060499}, authors presented a loosely coupled, tightly coupled and hybrid architectures for LTE/Wi-Fi interworking. Loosely coupled integration of LTE and Wi-Fi is proposed for non-collocated scenario, where LTE and Wi-Fi networks are connected through P-GW. It is suggested that multipath TCP (MP-TCP) can be used for loosely coupled architecture. The intelligent decision for traffic steering has been taken at TCP layer. Tightly coupled architecture shows that LTE and Wi-Fi radios are tightly bound and there is only one core network exists for both interfaces. This tight interworking realizes the potential of finer control over available radio interfaces in decision making and flow routing based on the channel states. Hybrid integration suggests a tighter integration to be realized along with merits of loosely coupled architecture.
+
+Tightly coupled interworking is focused by 3GPP as a component for Rel.13. Tightly coupled architecture is observed to have a finer level of control on radio interfaces. Understanding the potential of tighter level of interworking [2], many architectural proposals have been put forth on tighter level of interworking between LTE and Wi-Fi.  An architectural proposal to 3GPP includes tighter level of interworking at PDCP level~\cite{R3151743}. This architecture utilizes the split bearer and switched bearer properties of dual connectivity~\cite{TS36842} to steer traffic across two radios effectively. This proposal is standardized by 3GPP as LWA~\cite{36300}. Packets received through both interfaces are reordered and delivered to higher layer in-order. The performance benefits of LWA at PDCP layer of LTE protocol stack are given in~\cite{lagrange2014very}. Another architecture suggests aggregation at RLC level~\cite{RP150180}. This supports steering of packets from LTE to Wi-Fi from the RLC buffer. RLC retransmission and reordering ensures the reliability of the flows. It is shown that aggregation at RLC layer performs better than MP-TCP. For implementing both the architectures, changes has to be made at the protocol stack of UE and eNB. This makes these architectures not suitable for existing commercially available UEs to readily use these architectures even with the availability LTE and Wi-Fi interfaces.
+%We proposed interworking at IP layer to TSDSI~\cite{SWIP50} (a daughter body of 3GPP). Now 3GPP has considered the proposal for further enhancements. The proposed architecture makes existing UE to readily work with base station without any protocol modification at UE side. The architecture is discussed in Section~\ref{sec:proposedSystem}.
+% In~\cite{7060499}, the authors presented loosely coupled, tightly coupled, and hybrid architectures for LTE/Wi-Fi interworking. Loosely coupled integration of LTE/Wi-Fi is for the non-collocated scenario. It is suggested that multipath TCP (MP-TCP) is used for integration of LTE and Wi-Fi. The intelligent decision for interworking has been taken at TCP layer. In~\cite{7444757} authors have explored the potential of the tighter level of integration.  In~\cite{lagrange2014very} authors have explained the performance benefits of link aggregation at PDCP layer in LWA. Also 3GPP proposal~\cite{R3151743} introduces a new LWA adaptation layer for collocated LWA node. 
+% %This new layer acts as a controller and an interface which readily interwork with PDCP layer as shown in Fig.~\ref{fig:3gpp}. 
+% A proposal to 3GPP~\cite{RP150180} shown that LTE and Wi-Fi aggregation at RLC layer and they claim it performs better than MP-TCP. \\
+
+\textbf{Contributions : }Our main contributions in this paper are,
+\begin{itemize}
+\item Proposed a C-LWIP architecture which mitigates interference in a dense urban deployment and has a finer control on interfaces for decision making. This architecture ensures the interworking benefits to existing commercial UEs without any protocol changes.
+\item Implemented C-LWIP module in NS-3 simulator and validated it\textquotesingle s correctness through extensive simulations.
+\item Using C-LWIP module, we have evaluated the aggregation benefits for different link aggregation strategies (LASs). We found that, Wi-Fi only in Downlink (WoD-LAS) is best suited link aggregation strategy for contention based Wi-Fi MAC. Also we observed that split bearer negatively affects TCP growth, whereas switched bearer preserves it.
+%\item Developed an analytical model for measuring aggregation benefits for different LASs.
+%\item Experimental analysis is carried out for various LASs leading to better operator service provisioning in real-world environments by selecting a best suitable strategy.
+\end{itemize}
+%To the best of our knowledge, this work is the first system level simulator implementation of LWIP in line with 3GPP compliant LTE protocol stack.
+
+\begin{figure}[b]
+\centering
+\epsfig{width=9cm, height=8cm, figure=images/Aggregation_proposed_1.pdf}
+\caption{Proposed Architecture of C-LWIP.}
+\label{fig:proposed}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+ \epsfig{width=9cm,height=11cm, figure=images/3GPPLWIP.pdf}
+\caption{3GPP Architecture for non-collocated LWIP.}
+\vspace{-0.8 cm}
+ \label{fig:3gpp_lwip}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{figure*}[t]
+% \minipage{0.49\textwidth}
+% \centering
+% % % \epsfig{width=9cm,figure=table.eps}
+% \epsfig{width=8.6cm, figure=images/aggregation_proposed.pdf}
+%  \vspace{-0.17cm}
+% \caption{Proposed LWIP in collocated scenario.}
+% \label{fig:proposed}
+%     \vspace{-0.4cm}
+% \endminipage\hfill
+% ~
+% \minipage{0.49\textwidth}
+% \centering
+% \epsfig{width=8.6cm,height=9cm, figure=images/aggregation_3gpp.eps}
+%  \vspace{-0.17cm}
+% \caption{3GPP LWIP in collocated scenario.}
+% \label{fig:3gpp_lwip}
+%     \vspace{-0.4cm}
+% %\vspace{-0.5cm}
+% \endminipage\hfill
+% \end{figure*}
+\section{LWIP Architectures}
+\label{sec:proposedSystem}
+3GPP defined a LWIP framework by aggregation of non-collocated LTE and Wi-Fi at IP level which uses IPsec tunnel between UE and eNodeB to interwork with Wi-Fi~\cite{lwip3gpp}. We proposed C-LWIP framework using a \textit{Link Aggregation Layer} (LAL) in to Telecommunications Standards Development Society (TSDSI), India~\cite{SWIP50} (a daughter body of 3GPP). The proposed architecture makes existing UEs to readily work with C-LWIP node without any protocol modification at UE side.
+%In this section, two design choices of collocated LWA architectures at IP level have been discussed. The first design choice is adopted by 3GPP which uses an IPSec tunnel between eNodeB and UE to interwork with Wi-Fi~\cite{lwip3gpp}. We proposed a second design choice which introduces a Link Aggregation Layer (LAL) in the protocol stack for leveraging aggregation benefits of LWA. The proposed work has been submitted to TSDSI~\cite{SWIP50} (a daughter body of 3GPP) and 3GPP has considered this proposal for further enhancements. The proposed architecture makes existing UE to readily work with base station without any protocol modification at UE side.
+
+%In each of the given LWA architecture, different categories of LAS are studied depending upon the direction of traffic flow (\emph{i.e.}, uplink or downlink) and radio interface being used to drive the flow (\emph{i.e.}, LTE or Wi-Fi). Both 3GPP adapted LWA architecture and proposed LWA architecture are meant for aggregating LTE and Wi-Fi links for efficiently transmitting downlink data traffic to UEs. Hence, these architectures do not support LWA in transmitting uplink data traffic from UEs. 
+% We proposed interworking at IP layer which is submitted to TSDSI (a daughter body of 3GPP). Now 3GPP has considered the proposal for further enhancements. The proposed architecture makes existing UE to readily work with base station without any protocol modification at UE side.
+\subsection{LWIP Architectures Overview}
+% \label{subsec:lwadesign3gpp}
+
+\subsubsection{\textbf{Non-collocated LWIP Architecture}} 
+The architecture is shown in Fig.~\ref{fig:3gpp_lwip}. The eNodeB utilizes the available Wi-Fi radio resources for the UEs in RRC\_CONNECTED state. A secure IP tunnel is established between LWIP node and UE to ensure security for communication over Wi-Fi interface. This IPsec tunnel has increased the overhead of communication in a collocated scenario compared to our proposed architecture. In a non-collocated scenario IPsec tunnel holds true. The decision to steer traffic in LTE or Wi-Fi link is communicated to UE via a specific \textit{steering command} which in turn notified to the higher layers on the protocol stack. The higher layers can also take decision for traffic steering to Wi-Fi interface.
+
+\subsubsection{\textbf{Collocated LWIP Architecture}} 
+In proposed architecture, C-LWIP is realized by introducing a \textit{Link Aggregation Layer} (LAL) in the protocol stack of C-LWIP node as shown in Fig.~\ref{fig:proposed}. This makes even the existing UEs to readily benefit from C-LWIP without any modifications. LAL does not add any new headers to the IP data packets received from EPC via the S1-U interface. Packets going through LTE and Wi-Fi interfaces follow regular packet forwarding procedures at their protocol stacks and get delivered directly to IP layer. LAL can collect various network parameters and actively participate in intelligent decision making for steering IP traffic across LTE and Wi-Fi interfaces in the downlink. The security over Wi-Fi interface is provided by Wi-Fi key, which is obtained from LTE RRC and communicated to UE through RRC signaling. RRC generates the Wi-Fi Layer 2 security key from eNB Key $K_{eNB}$. In our proposed C-LWIP architecture, the traffic split may be (a) flow level split or (b) packet level split. In flow level split, an entire flow is sent on either LTE or Wi-Fi links and hence in-sequence delivery issue does not arise. In packet level split, individual packets of a flow can be sent across different interfaces, hence, achieving in-sequence delivery in such a split is an open problem.
+
+%\newly{
+\subsubsection{\textbf{Advantages of Collocated over Non-collocated LWIP Architecture}} 
+The tighter level of aggregation between LTE eNodeB and Wi-Fi AP in collocated fashion (C-LWIP node) has several advantages with respect to end user throughput in contrast to the non-collocated architecture, both at the physical layer and network layer.
+\textbf{\\At Physical Layer:}
+The major advantage of collocated architecture as compared to non-collocated architectures is the flexibility in adapting fractional frequency reuse (FFR) scheme for mitigating inter-cell interference. Given a spatial distribution of UEs in the coverage, C-LWIP node may employ FFR to serve users where LTE eNodeB of C-LWIP serving users in the inner region and Wi-Fi of C-LWIP node serving the interference-prone edge users. In a case of dense urban scenarios, C-LWIP nodes act as an important contributor for mitigating the interference among neighbor C-LWIP nodes by assigning non-overlapping LTE and Wi-Fi bands appropriately as shown in figure~\ref{fig:rem}. Multiple C-LWIP nodes are considered whose coverage regions are spatially marked distinctly as region $R1,$ and $R2$. If the users exist in $R1$, they will be served by LTE interface of C-LWIP. Similarly, if a user resides in region $R2$, then it could potentially use Wi-Fi AP to mitigate the inter-cell interference. This is possible due to unified control plane signaling between LTE eNodeB and Wi-Fi AP in C-LWIP node. Also, C-LWIP node monitors and controls the transmit power of both radios to achieve this task.  
+
+In the case of non-collocated architecture, the interference mitigation flexibility could not be achieved as two radios are far apart and employing FFR schemes are impractical because the power control is independent of the individual devices. Only data plane offloading of LTE is supported to Wi-Fi.
+\begin{figure}
+\centering
+\epsfig{width=4.5cm,figure=images/lwa_INTERFERENCE.pdf}
+\caption{Frequency Reuse in a dense C-LWIP deployment}
+\vspace{-0.8cm}
+\label{fig:rem}
+\end{figure}
+
+\textbf{At Network Layer:} 
+IPsec tunnel introduced in non-collocated deployment involves encryption of packets at IP layer (to send through untrusted WLAN terminal) followed by link level encryption of WLAN (optionally) which can be removed in a collocated scenario. Our proposed architecture reduces the overhead of double encryption (\emph{i.e.}, at IP and Layer 2 of WLAN) by using Wi-Fi key per client derived from existing eNB key $K_{eNB}$. Also, every packet sent through IPsec tunnel is added with tunnel endpoint header, which adds to inefficient use of resources over the wireless channel. Collocated architecture does not require any additional headers. Non-collocated architecture facilitates to readily work with existing Wi-Fi AP, but the decision for traffic offloading is simplified at a coarse level of granularity \emph{e.g.}, observed throughput and delay over an interface can be the determining factor for taking the offloading decision. But collocated architecture supports decision making for offloading at a very fine granularity of information  \emph{i.e.}, channel load, received SNR of Wi-Fi and channel characteristics such as loss and fading. This drives collocated architecture to perform better in comparison to non-collocated architecture.
+
+
+% \textbf{It is notable that collocated architecture can support fractional frequency reuse with LTE channel operating in the inner region and Wi-Fi channel operating in the outer region which avoids inter-cell interference and can adaptively control the interference which will yield an high throughput. Also the system performance gain for using fixed number of }
+
+
+
+%A collocated cum non-collocated architecture is the most preferred choice of usage which can integrate both the benefits at once.
+
+
+%The tightly coupled integrations proposed by 3GPP~\cite{7060499} is shown in Fig.~\ref{fig:3gpp}. It contains an LWA adaptation layer which is meant for aggregating LTE and Wi-Fi links for efficiently transmitting downlink data traffic of UEs. This architecture provides in-sequence delivery for packets at PDCP layer. If an IP packet arrives at LWA node from EPC via the S1-U interface in the downlink, then PDCP header is added to that packet and based on split scheme (packet or flow level) implemented at adaptation layer, it will be sent either to Wi-Fi or LTE interface. For LTE interface destined packets, they are added into regular (Radio Link Layer) RLC queue. For Wi-Fi interface destined packets, they are encapsulated with 802.11 LLC header and added into 802.11 MAC queue(s). At the UE side, a packet received on Wi-Fi interface is decapsulated and fed into LTE PDCP instance corresponding to specified radio bearer ID of the packet. It is worth mentioning that, this architecture will impose modifications to the protocol stack of UE. It provides security for packets sent through Wi-Fi interface using access stratum (AS) security.
+
+\subsection{Link Aggregation Strategies}
+\label{subsec:comparison}
+
+In this subsection, we present two link aggregation strategies (LASs) and their characteristics for collocated and non-collocated scenarios. 
+\begin{enumerate}
+\item \textit{\textbf{Naive LAS or N-LAS}}: In this approach, LTE and Wi-Fi links are simultaneously used for sending uplink and downlink IP data traffic. In general, nearly half of the traffic is sent through LTE link and remaining half passes via Wi-Fi link irrespective of their channel conditions. It has two variants depending on whether the split is performed at packet level or flow level.
+%In-sequence delivery issue will not arise as all the packets of a given flow are sent entirely on the same interface. 
+\begin{itemize}                                                                                                                                                                                                                                                                                                \item  Packet Split N-LAS : Split within a single IP flow.
+\item  Flow Split N-LAS : Split among multiple IP flows.
+\end{itemize}
+\item \textit{\textbf{Wi-Fi only on Downlink LAS or WoD-LAS}}: In this approach, Wi-Fi is used for transmitting downlink traffic while LTE is used for transmitting both uplink and downlink traffic as shown in Fig.~\ref{fig:LAS4}. As the number of users increases in the network, due to CSMA/CA, contention in Wi-Fi network also increases which brings down the throughput of Wi-Fi network. WoD-LAS was proposed in~\cite{7060499} and presented as a tightly coupled interworking architecture. WoD-LAS lowers the possibility of contentions in Wi-Fi link as it participates only in downlink transmissions.
+\end{enumerate}
+%\begin{figure}[b]
+%\centering
+%\epsfig{width=5.5cm,height=5.5cm, figure=images/LAS_new.pdf}
+%\caption{Link Aggregation Strategy : WoD-LAS}
+%\label{fig:LAS4}
+%\end{figure}
+
+\begin{figure*}[htb!]
+\minipage{0.30\textwidth}
+\epsfig{width=5.2cm, figure=images/LAS_new.pdf}
+\caption{Link Aggregation Strategy : WoD-LAS}
+\label{fig:LAS4}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.70\textwidth}
+ \vspace{-0.7cm}
+\epsfig{width=12.9cm,figure=images/classDiagram.pdf}
+
+ \caption{Class Diagram of C-LWIP module in NS-3}
+\label{fig:ns3lwaclassdiagram}
+    \vspace{-1.7cm}
+\endminipage\hfill
+\end{figure*}
+
+%\section{Analytical Model for LAS Performance}
+%Link aggregation strategies exhibit different performance improvements. Our experimental results confirm that WoD-LAS performs better than that of N-LAS and the performance improvements are shown in Section~\ref{sec:perfAnalysis}.
+%%It is been observed with our experiments that, WoD-LAS is better than N-LAS. Here, we have captured the improvement of WoD-LAS as compared to N-LAS.
+%\subsection{Throughput Enhancement in WoD-LAS}
+%According to~\cite{bianchi2000performance} when $n$ nodes are in the network and a node transmits with a probability $\tau$, then probability that at least a transmission happens ($P_{tr}$), and probability of a successful transmission ($P_{s}$) is given by
+%\begin{equation}
+%P_{tr}=1-(1-\tau)^{n}
+%\end{equation}
+%\begin{equation}
+%P_{s}=\frac{n \tau (1-\tau)^{n-1}}{P_{tr}}
+%\end{equation}
+%Here, $P_{s}$ is obtained using Discrete Time Markov chain analysis. Consider that among $n$ users in the network, if $m$ users were served by LWIP node, $m \in [0,n-1]$ and rest $(n-m)$ users contend for the channel on Wi-Fi link. In case of Wi-Fi only in Downlink the number of nodes contending for the channel gets reduced, which leads to reduction in collisions. This is only feasible if there is a secondary carrier like LTE to transmit the uplink traffic of UEs. The probability of success ($P_{s}^{WoD}$) when $m$ nodes are not contending is given by.
+%\begin{equation}
+%P^{WoD}_{tr}=1-(1-\tau)^{n-m}
+%\end{equation}
+%\begin{equation}
+%P^{WoD}_{s}=\frac{(n-m) \tau (1-\tau)^{n-m-1}}{P^{WoD}_{tr}}
+%\end{equation}
+%\textbf{Lemma :} Effective improvement in probability of success ($P_{s}^{inc}$) will be $P_{s}^{inc}=P_{s}^{WoD}-P_{s}$.
+%\begin{equation}
+%P^{inc}_{s}=\frac{(n-m)\tau(1-\tau)^{n-m-1}\big( P_{tr}^{WoD} m (1-\tau)^m -P_{tr}\big)}{P_{tr} P_{tr}^{WoD}}
+%\end{equation}
+%\textbf{Corollary :}
+%In WoD-LAS, when $m > 1$ and $\tau \geq \tau_{n-m}^{sat}$, it makes $P_{tr}^{WoD} m (1-\tau)^m -P_{tr}$ to be greater than zero and will lead $P^{inc}_{s}$ to be strictly a positive quantity. $\tau_{n-m}^{sat}$ corresponds to $\tau$ value for which $(n-m)$ devices achieve maximum throughput. The load in uplink and downlink are non symmetric and data demand in downlink is high which naturally makes WoD-LAS as a preferable choice compared to N-LAS in LWIP system. The variation of probability of success ($P_{s}$) with respect to transmission probability ($\tau$) is shown in Figure~\ref{fig:probability_of_success}. The probability of success increases with increase in the number of non-contending users ($m$) in the network.  
+%
+%
+%\begin{figure}
+%\center
+%\epsfig{width=9cm,figure=images/Success_Probabilty.eps}
+%\caption{Variation of Probability of Success ($P_{s}$) with non-contending users}
+%\label{fig:probability_of_success}
+%\end{figure}
+%
+%\par Saturated system throughput when $n$ nodes contend for the channel in Wi-Fi is given by
+%\begin{equation}
+%S_{wi-fi}=\frac{P_{s} P_{tr} E[P]}{(1-P_{tr})\sigma + P_{tr} P_{s} T_{s} + P_{tr}(1-P_{s})T_{c}}
+%\end{equation}
+%where $\sigma$ corresponds to empty slot time, $T_{s}$ corresponds to average time (slots) when channel is sensed busy and $T_{c}$ is the average time (slots) channel is busy due to collisions. $E[P]$ is the average payload size in slots. System throughput in WoD-LAS ($S_{WoD}$) is given by
+%\begin{equation}
+%\frac{P_{s}^{WoD} P_{tr}^{WoD} E[P]}{(1-P_{tr}^{WoD})\sigma + P_{tr}^{WoD} P_{s}^{WoD} T_{s} + P_{tr}^{WoD}(1-P_{s})T_{c}}
+%\end{equation}
+
+
+
+\section{C-LWIP Module in NS-3}
+\label{sec:lwans3}
+%The LWA module is developed by extending the NS-3 simulator. 
+We developed a C-LWIP module in NS-3~\cite{ns3} to evaluate the performance of different link aggregation strategies. An essential component of this design is to realize C-LWIP node, which is achieved by binding the LTE and Wi-Fi radio interfaces together at IP level. This binding is implemented by a class known as \textit{LinkAggregationLayer}. This class is responsible for provisioning various dynamic link level schedulers and steering algorithms. A high-level class diagram of C-LWIP design is given in Fig.~\ref{fig:ns3lwaclassdiagram}. 
+%Two important link level traffic flow split highlighted in this design are: (a) Flow Split (b) Packet Split. 
+
+When a packet is received from LTE core network (via S1-U) at C-LWIP node, LTE specific packet headers (GTP headers) are removed and resulting packet is routed to appropriate radio interface (\emph{i.e.}, LTE or Wi-Fi \textit{netdevices}) dictated by the LAS. A map for MAC address of the UE to IP address of the UE is created. When a new packet with destined IP address arrives to be sent via Wi-Fi, it is placed into LLC of Wi-Fi with the help of destination MAC address obtained from the map. An entry is made in this mapping table when a UE associates with the C-LWIP node. To send a packet through LTE interface, the packet is forwarded to LTE socket at C-LWIP node. 
+To send a packet through Wi-Fi interface, UE's Wi-Fi MAC address is retrieved by using a mapping table at \textit{LinkAggregationLayer} in the C-LWIP node.
+
+A network address translation mechanism is devised at UE side in order to route traffic via unified connection management. This is driven by the fact that, LTE works as the anchor point for Wi-Fi node and no route exists between Wi-Fi and public Internet other than through LTE EPC. At UE side, packets generated by an application is switched to any of the available interfaces as dictated by the link aggregation strategies. In this work, we have used LASs at the UE side as well which can be implemented by operator defined policies. Provisions are made to implement uplink scheduling algorithms across radio interfaces. For flow level traffic steering, a five-tuple structure is designed to create mapping for radio interface which is necessary for pushing traffic as per decisions are taken by link aggregation strategy. 
+%Packet split steering strategies unlike flow level maintain no state information and being scheduled based on available link capacity.
+%\begin{figure*}[!ht]
+%\minipage{1\textwidth}
+%\centering
+%% % \epsfig{width=9cm,figure=table.eps}
+%\epsfig{width=14cm,figure=images/LWAClassDiagram.eps}
+% \vspace{-0.17cm}
+% \caption{Class Diagram of LWA module in NS-3}
+%\label{fig:ns3lwaclassdiagram}
+%    \vspace{-0.4cm}
+%\endminipage\hfill
+%\end{figure*}
+
+\section{Experimental Setup}
+\label{sec:simResults}
+The experimental platform is based on the C-LWIP module developed by extending NS-3 simulator. The simulation parameters are given in Table \ref{tab:config}. In order to simulate the scenarios realistically, we have considered the Back haul delay as 40~ms. Our simulation test bench evaluates various link aggregation schemes which are described as follows.
+\begin{itemize}
+\item \textbf{LTE Only :} All traffic between UE(s) and C-LWIP nodes are sent through LTE links.
+\item \textbf{Wi-Fi Only :} All traffic between UE(s) and C-LWIP nodes are sent through Wi-Fi links.
+\item \textbf{Packet Split N-LAS (PS-N-LAS) :} Packets of a split C-LWIP bearer are routed through different radio links.
+\item \textbf{Flow Split N-LAS (FS-N-LAS) :} IP traffic is equally divided on different radio links.
+\item \textbf{WoD-LAS :} Unlike FS-N-LAS, in this strategy, Wi-Fi is used only in downlink for carrying flows whereas LTE is used for both uplink and downlink. \modify{All uplink flows of UE through LTE interface is achieved by inserting appropriate forwarding rules in UE's \textit{iptable}} without any protocol stack modification.
+\end{itemize}
+
+\begin{table}[b]
+\centering
+\vspace{-0.4cm}
+\caption{NS-3 Simulation Parameters}
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{|l|l|} \hline 
+\label{tab:config}
+\textbf{\hspace{1cm}Parameter} & \textbf{\hspace{1cm}Value}\\ [0.7ex]\hline \hline
+%Number of UEs & 1, 4\\ \hline
+Number of C-LWIP Nodes & 1 and 10 \\ \hline
+%Number of UEs & 1, 4\\ \hline
+LTE Configuration  & 10MHz, 50 RBs, FDD \\ \hline
+Wi-Fi Configuration & IEEE 802.11a, 5 GHz, 20 MHz \\ \hline
+%Wi-Fi Bandwidth & 20 MHz\\ \hline
+Traffic Type & Mixed (voice, video, web, FTP) \\ \hline
+Distance between UE and C-LWIP node & 25 Meters\\ \hline
+Simulation Time & 100 Seconds\\ \hline
+Error Rate Model & NIST Error Rate Model\\ \hline
+Mobility Model & Static \\ \hline
+%Channel Propagation Model & \pbox{5cm}{Constant Speed Propagation \\ Delay Model} \\ \hline
+Wi-Fi Rate Control Algorithm & Adaptive Auto Rate Fallback\\ \hline
+LTE MAC Scheduler & Proportional Fair Scheduler\\ \hline
+Number of seeds & 5\\ \hline
+Wi-Fi Queue size & 400 packets\\ \hline
+%EPC Delay & 15 ms\\ \hline
+Back Haul Delay & 40 ms\\ \hline
+\end{tabular}
+%\vspace{-2mm}
+\end{table}
+
+\begin{table}[htb!]
+\centering
+\caption{Percentage Distribution of User Traffic }
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|c|c|c|c|c|} \hline 
+\label{tab:mixedtraffic}
+\textbf{Traffic Class} & \textbf{Nature} & \textbf{Expt \#3} & \textbf{Expt \#4} & \textbf{Expt \#5}\\ [1ex]\hline \hline
+Voice & UDP & 20\% & 20\% & 40\% \\ \hline
+FTP & TCP & 20\% & 60\% & 50\% \\ \hline
+Video & UDP & 60\% & 20\% & 30\% \\ \hline
+Web & TCP & 20\% & 40\% & 60\% \\ \hline
+\end{tabular}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Depending on the number of C-LWIP nodes, number of UEs and nature of traffic, we have conducted five sets of experiments with different link aggregation strategies. First, two experiments (\#1 and \#2) are performed to benchmark C-LWIP benefits for an ideal case of one and four users with UDP traffic, respectively. Next two experiments (\#3 and \#4) are conducted to see the performance of C-LWIP in a typical home scenario with mixed traffic (\emph{i.e.}, voice, video, web, FTP). The last experiment (\#5) imitates a real-world indoor stadium scenario having multiple C-LWIP nodes with mixed traffic. The exact percentage of users in each of the traffic types in a mixed traffic scenario are shown in Table \ref{tab:mixedtraffic}. The details of each experiment conducted are briefly summarized as follows. 
+\begin{itemize}
+\item \textbf{Expt \#1 :} This experiment involves one C-LWIP node with only one user to study the ideal behavior of the system. We considered default bearer with four UDP data flows (two in uplink and two in downlink) and observed network throughput w.r.t. UDP Application Data Rate (ADR) by varying the data rate as 1, 6, 12, 24~Mbps per flow.
+\item \textbf{Expt \#2 :} It involves one C-LWIP node with four users. We considered default bearer with four UDP data flows per user (two in uplink and two in downlink), thus, with 16 flows in total for study. The network throughput is observed w.r.t. ADR by varying the data rate as 1, 2, 4, 8~Mbps per flow.
+\item \textbf{Expt \#3 :} To demonstrate the interworking benefits in a typical home scenario, this experiment involves one C-LWIP node with varying number of users from five users to 30 users. It considers mixed traffic scenario having the majority of UDP flows. 
+\item \textbf{Expt \#4 :} This experiment involves one C-LWIP node with varying number of users from five users to 30 users. Unlike previous experiment, it considers mixed traffic scenario having majority of TCP flows.
+\item \textbf{Expt \#5 :} To observe the performance of C-LWIP in a real-world indoor stadium, this experiment involves 10 C-LWIP nodes with varying number of users from 50 to 400. Realization of indoor stadium includes multiple C-LWIP nodes with diverse data traffic requirements. The Radio Environment Map (REM) plot of the indoor stadium layout is presented in Fig.~\ref{fig:remplot}.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[htb!]
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/UDP1UE.eps}
+ \vspace{-0.17cm}
+\caption{UDP Network Throughput : One UE}
+\label{fig:udp1uethroughput}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/UDP4UE.eps}
+ \vspace{-0.17cm}
+\caption{UDP Network Throughput : Four UEs}
+\label{fig:udp4uethroughput}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/remplot.eps}
+ \vspace{-0.17cm}
+\caption{REM Plot for Indoor Stadium layout with 10 C-LWIP Nodes}
+\label{fig:remplot}
+    \vspace{-0.3cm}
+\endminipage\hfill
+\end{figure*}
+\begin{figure*}[htb!]
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/1IBX_MixedTraffic_UDP_Heavy.eps}
+ \vspace{-0.17cm}
+\caption{Home Scenario with one C-LWIP Node, Mixed Traffic, UDP Heavy}
+\label{fig:home_udp}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/1IBX_MixedTraffic_TCP_Heavy.eps}
+ \vspace{-0.17cm}
+\caption{Home Scenario with one C-LWIP Node, Mixed Traffic, TCP Heavy}
+\label{fig:home_tcp}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/10LWA_IndoorStadium.eps}
+ \vspace{-0.17cm}
+\caption{Indoor Stadium with 10 C-LWIP Nodes, Mixed Traffic}
+\label{fig:indoorstadium}
+    \vspace{-0.3cm}
+\endminipage\hfill
+\end{figure*}
+
+\section{Performance Results}
+\label{sec:perfAnalysis}
+The variation of UDP throughput with respect to UDP ADR of uplink and downlink flows for one UE and four UEs are shown in Figs.~\ref{fig:udp1uethroughput} and~\ref{fig:udp4uethroughput} respectively. UDP traffic types tend to harvest maximum capacity of the links, hence this experimental result sets a classical benchmark for aggregation advantages over individual LTE and Wi-Fi radio links. 
+
+\subsection{Analysis of Expt \#1}In one UE case with 4~Mbps and 24~Mbps ADR, the network is able to deliver the data in all the LASs. The throughput variation in Wi-Fi only does not vary much after 48~Mbps ADR and thereafter saturates, because, it reaches its maximum achievable rate of 24~Mbps for 802.11a with maximum PHY rate of 54~Mbps. Similarly, LTE only attains saturation after 48~Mbps. However, leveraging the interworking benefits of C-LWIP node, PS-N-LAS and FS-N-LAS are able to deliver higher network throughputs than that of individual LTE and Wi-Fi only networks. The two variants of N-LAS schemes are indistinguishable in performance due to its naive approach of equally dividing flows and type of user traffic. WoD-LAS is no better than both FS-N-LAS and PS-N-LAS strategies due to presence of only one user and no contention in Wi-Fi link. The next experiment encompasses a contention based scenario. 
+
+\subsection{Analysis of Expt \#2}The inclusion of four users in the network enhances the data collision probability and therefore, Wi-Fi only performance is observed to be poor as compared to other LASs. As LTE operates on the principle of scheduled based MAC, its throughput continues to rise with an increase in ADR but attains saturation after 34~Mbps. Like the previous experiment, this experiment shows almost equal throughputs due to naive approach of equally dividing flows and type of user traffic. 
+%The PS-N-LAS and FS-N-LAS schemes leverage the available radio interfaces and throughput is higher than that of individual LTE and Wi-Fi radio links. The two variants of N-LAS schemes are indistinguishable in performance due to its naive approach of equally dividing flows and type of user traffic. 
+An important takeaway by comparing the results between N-LAS and WoD-LAS is that contention mechanism of Wi-Fi degrades the N-LAS performance resulting lower peak value than WoD-LAS throughput. However, WoD-LAS does not suffer from this drawback by preventing contentions in Wi-Fi, as they carry data only in downlink, not in uplink.
+
+\subsection{Analysis of Expts \#3 and \#4}In order to understand the behavior of C-LWIP node for a typical home deployment scenario, the next two experiments demonstrate performance benefits of C-LWIP considering UDP heavy and TCP heavy mixed traffic which are shown in Figs.~\ref{fig:home_udp} and~\ref{fig:home_tcp}, respectively. In both plots, with increase in number of users, the aggregation of LTE and Wi-Fi has resulted enhanced throughput than standalone LTE and Wi-Fi only networks. Wi-Fi performance is degraded due to the occurrence of contentions and does not improve. Packet split mechanism could not improve proportionally due to inherent issue of out-of-order deliveries and Dupack transmissions for TCP flows which are avoided in flow split N-LAS, because, each single flow is pushed as a unit to destined radio interface. Comparison of WoD-LAS and FS-N-LAS shows that WoD-LAS suppresses the demerits of FS-N-LAS by restricting the downlink user flows to Wi-Fi and LTE, and uplink flows only to LTE. In WoD-LAS, Wi-Fi utilizes its spectrum resources to carry user data and provides the best effort services by smartly utilizing the flow constraints in one direction. This facilitates a significant reduction in number of collisions, thereby improving the system throughput over naive LAS.
+
+\subsection{Analysis of Expt \#5}The variation of system throughput with number of UEs in an indoor stadium scenario having 10 C-LWIP nodes is shown in Fig.~\ref{fig:indoorstadium}. Clearly, like the previous experiment, Wi-Fi performance degradation is largely contributed by collisions and interference. On the other hand, LTE throughput tends to produce less and nearly flat variation, because available radio resources are shared among all the active users. PS-N-LAS and FS-N-LAS do not show a notable difference as both the schemes are largely affected by reduced throughput on Wi-Fi link. WoD-LAS outperforms other LASs, by imposing flow restriction of Wi-Fi supporting only downlink transmission and avoids contentions. This results in higher system throughput over all other link aggregation strategies under study. WoD-LAS achieves a system throughput of 155~Mbps for 400 users in Fig.~\ref{fig:indoorstadium} and shows nearly 50\% more throughput than that of two variants of N-LAS (nearly 103~Mbps).  
+
+Fig.~\ref{fig:stadlwadelay} shows that, PS-N-LAS experiences less end-to-end delay compared to other LASs, because it uses two radio interfaces with different packet service rates. FS-N-LAS incurs higher delay than PS-N-LAS as all packets within the flow are routed to one interface. With less number of users, WoD-LAS delay is higher than PS-N-LAS, but for large number of users, Wi-Fi contention plays a role in packet delay, thus increasing the delay of PS-N-LAS in case of 300 and 400 users compared to WoD-LAS. 
+
+Fig.~\ref{fig:stadlwajitter} shows end-to-end jitter trend for three link aggregation strategies, where PS-N-LAS has maximum jitter because Wi-Fi and LTE use different data rates for their packet transmission. The jitter for FS-N-LAS and WoD-LAS are much less than that of PS-N-LAS and does not significantly impact voice traffic. Depending on the network requirements, operators could dynamically switch among available link aggregation schemes for enhancing user experience and responsiveness of the system. Fig.~\ref{fig:lwacw} reveals the congestion window growth of FS-N-LAS is better as compared to PS-N-LAS. This is because of out-of-order delivery of TCP packets at the receiver side in the proposed architecture. A best offloading algorithm that can ensure less or no out-of-order delivery will be studied as part of future work.
+%If a suitable algorithm is proposed, then PS-N-LAS would outperform other LAS. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[t]
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/10IBXVoiceDelay.eps}
+ \vspace{-0.17cm}
+\caption{Delay of Voice Traffic in Indoor Stadium with 10 C-LWIP Nodes}
+\label{fig:stadlwadelay}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/10IBXVoiceJitter.eps}
+ \vspace{-0.17cm}
+\caption{Jitter of Voice Traffic in Indoor Stadium with 10 C-LWIP Nodes}
+\label{fig:stadlwajitter}
+    \vspace{-0.3cm}
+\endminipage\hfill
+~
+\minipage{0.32\textwidth}
+\epsfig{width=5.7cm,height=4cm,figure=images/cwnd_plot.eps}
+ \vspace{-0.17cm}
+\caption{Variation of TCP Congestion Window for FTP traffic flows}
+\label{fig:lwacw}
+    \vspace{-0.3cm}
+\endminipage\hfill
+\end{figure*}
+\section{Challenges and Solutions for C-LWIP}
+
+\subsection{Packet split (split bearer) is advantageous:} Packet split has a finer offloading granularity finds its goodness in the case of a UDP transmission. The split bearer is an ideal offloading solution, where offloading decisions are instantaneous based on interface availability and loss at that particular interface. A finer level of offloading is also beneficial only if the interface information is available. Current 3GPP specification on C-LWIP will not yield a better packet level steering solution, because of limited knowledge on Wi-Fi for decision making. Complete knowledge of an interface is required for an efficient decision. This makes C-LWIP as a natural choice over non-collocated LWIP.
+\subsection{Packet split is also a killer strategy for TCP growth:} Even as a dynamic offloading mechanism and finest offloading granularity, packet split is not able to achieve a better throughput because of difference in time of delivery of the packets to the destination. TCP is a highly reliable protocol on observing a missing packet (which is due to delay in another interface - but not lost) starts retransmission procedure by sending duplicate acknowledgments (DUPACK). A TCP sender understands this DUPACKs as actual packet loss and reduces the congestion window on receiving 3 consecutive DUPACKs, which is the most undesirable reaction. This problem arises becuase IP layer fails to reoder the packets which are received out-of-order. A reordering mechanism could be sucessfully implemented to ensure inorder deliver of packets in case of split bearer mechanism, which is a potential problem to be addressed in future works.  
+%
+%\subsection{Desired properties of Link Aggregation Techniques}
+%An ideal link aggregation technique should follow any of the above mentioned link aggregation strategy and maximize the system throughput by capturing the link dynamics of different associated radios. Link aggregation techniques should also support opportunistic transmission across multiple radios (i.e., an intelligent decision should be made at finer granularity rather than dedicating a flow to an interface). Link aggregation technique should also support the longevity of users connection by considering their remaining battery energy as a decision-making criterion for offloading.
+%
+%\subsection{Future of LWIP}
+%Protocol level modifications are required at the UE side to realize LWIP and most of the deployed devices in the market cannot make use of it.
+%Cannot support multiple interfaces (such as ZigBee, Bluetooth, and 6Lowpan devices) if integrated could have a potential to solve Next generation IoT problem. 
+
+
+\section{Conclusions and Future Work}
+\label{sec:conclusion}
+%In this paper, we evaluated and analyzed different link aggregation strategies for collocated LWIP architecture which does not impose any protocol level modification at UE side. We developed an LWIP module by extending NS-3 simulator which serves as an experimental platform to carry out further experiments and evaluates performance of LTE/Wi-Fi interworking at IP layer. The simulation workbench supports various existing traffic steering schemes and capable of handling the design of intelligent traffic steering algorithms. We have shown 50\% improvement of system throughput in WoD-LAS as compared to N-LAS in an indoor stadium environment. As part of the future work, we aim to investigate efficient learning based, intelligent traffic steering algorithms and evaluating collocated LWIP performance in a real-time testbed with respect to user mobility scenarios.
+
+In this paper, we have proposed a C-LWIP architecture and enumerated its benefits over 3GPP LWIP architecture. Alongside we have evaluated and analyzed different link aggregation strategies. The proposed collocated C-LWIP architecture is carefully developed such that it does not impose any protocol level modification at UE side and makes the existing commercial UE to readily work with C-LWIP. We developed a C-LWIP module by extending NS-3 simulator which serves as an experimental platform to carry out further experiments and evaluates performance of proposed C-LWIP architecture. The simulation workbench supports various existing traffic steering schemes and capable of handling the design of intelligent traffic steering algorithms. We have observed, switched bearer as the most preferable offloading strategy as compared to split bearer in case of TCP offload. For best effort traffic, split bearer performance are comparable with switched bearer. split bearer has the ability for dynamic offloading based support for quick decision making. It is shown that 50\% improvement in system throughput is observed for WoD-LAS, as compared to N-LAS in an indoor stadium environment.
+%\section*{ACKNOWLEDGEMENT}\label{ack}
+%[Space Reserved for author's acknowledgement or inclusion of funding source if any.]
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

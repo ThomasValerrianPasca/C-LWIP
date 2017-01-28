@@ -1,0 +1,144 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{textcomp}
+\usepackage{url}
+\usepackage{color}
+\usepackage{pbox}
+\usepackage{multirow}
+\usepackage[style=base, font=footnotesize, labelfont={sf,bf}, margin=0cm]{caption}
+\newcommand{\todo}[1]{{ (\textbf{TODO:} #1)}}
+\definecolor{darkgreen}{RGB}{255, 127, 0}
+\newcommand{\modify}[1]{{#1}}
+\newcommand{\newlymodify}[1]{{#1}}
+% \newcommand{\modify}[1]{{#1}}
+\newcommand{\remove}[1]{{}}
+\ifCLASSINFOpdf
+\else
+\fi
+\begin{document}
+
+\section{System Model}
+%The performance benefits by aggregating LTE and Wi-Fi links for efficient LWIP architecture can be modeled using queueing theory. The radio links process incoming packets which arrive from higher protocol layers in the uplink and lower layers in the uplink. LTE and Wi-Fi process packets in different service rate, hence can be modeled as two heterogeneous service channels for the incoming packets in the queue. Assume the inter arrival time between successive packets and duration between two consecutive service follow a Poisson distribution. Hence, the arrival rate and service rate follow Exponential distribution. Consider the packet arrival rate is $\lambda$. Service rates of LTE and Wi-Fi are $\mu_{lte}$ and $\mu_{wifi}$, respectively. LTE and Wi-Fi links imitate two heterogeneous servers.
+Traffic Steering Strategies (TSS) exhibits different performance improvement. It is been observed with our experiments that WoD is better than NLAS. Here, we have captured the improvement because of using WoD compared to NLAS.
+\subsection{Increase in throughput because of WoD-Saturated Throughput case}
+According to~\cite{bianchi2000performance} when $n$ nodes are in the network and a node transmits with a probability $\tau$. Then, probability that atleast a transmission happen ($P_{tr}$), and probability of a successful transmission ($P_{s}$) is given by
+\begin{equation}
+P_{tr}=1-(1-\tau)^{n}
+\end{equation}
+\begin{equation}
+P_{s}=\frac{n \tau (1-\tau)^{n-1}}{P_{tr}}
+\end{equation}
+Here, $P_{s}$ is obtained using Discrete Time Markov chain analysis. 
+Consider that among $n$ users in the network, if $m$ users were served by LWIP node, $m \in [0,n-1]$ and rest $(n-m)$ users contend for the channel in Wi-Fi link. In case of Wi-Fi only in Downlink the number of node contending for the channel gets reduced, which leads to reduction in collision. This is only feasible if there is a secondary carrier like LTE to take the uplink data. The probability of success ($P_{s}^{WoD}$) when $m$ nodes are non contending is given by.
+\begin{equation}
+P^{WoD}_{tr}=1-(1-\tau)^{n-m}
+\end{equation}
+\begin{equation}
+P^{WoD}_{s}=\frac{(n-m) \tau (1-\tau)^{n-m-1}}{P^{WoD}_{tr}}
+\end{equation}
+\textbf{Lemma 1 :} Effective improvement in probability of success will be
+\begin{equation}
+P_{s}^{inc}=P_{s}^{WoD}-P_{s}
+\end{equation}
+\begin{equation}
+P^{inc}_{s}=\frac{(n-m)\tau(1-\tau)^{n-m-1}\big( P_{tr}^{WoD} m (1-\tau)^m -P_{tr}\big)}{P_{tr} P_{tr}^{WoD}}
+\end{equation}
+\textbf{Corollary 1:}
+In WoD, when $m > 1$ and $\tau \geq \tau_{n-m}^{sat}$, makes $P_{tr}^{WoD} m (1-\tau)^m -P_{tr}$ to be greater than zero, will lead $P^{inc}_{s}$ to be strictly a positive quantity. $\tau_{n-m}^{sat}$ corresponds to $\tau$ value for which $(n-m)$ devices achieve maximum throughput.
+\par Saturated system throughput when $n$ nodes content for the channel is given by
+\begin{equation}
+S_{wi-fi}=\frac{P_{s} P_{tr} E[P]}{(1-P_{tr})\sigma + P_{tr} P_{s} T_{s} + P_{tr}(1-P_{s})T_{c}}
+\end{equation}
+Where $\sigma$ corresponds to empty slot time, $T_{s}$ corresponds to average time (slots) when channel is sensed busy and $T_{c}$ is the average time (slots) channel is busy due to collision. $E[P]$ is the average payload size in slots. System throughput in WoD ($S_{WoD}$)is given by
+\begin{equation}
+\frac{P_{s}^{WoD} P_{tr}^{WoD} E[P]}{(1-P_{tr}^{WoD})\sigma + P_{tr}^{WoD} P_{s}^{WoD} T_{s} + P_{tr}^{WoD}(1-P_{s})T_{c}}
+\end{equation}
+
+The load in UL and DL are non symmetric, Data demand in DL is high which naturally makes WoD as a preferable choice compared to NLAS. If UL and DL are symmetric then WoD will be preferred only if the overall system delay of WoD is lesser than NLAS.
+
+
+
+
+\section{Improvement in throughput}
+
+\section{Reduction in collision}
+\begin{equation}
+P_{c}=1-(1-\tau)^{n-1}
+\end{equation}
+\begin{equation}
+P_{c}^{WoD}=1-(1-\tau)^{n-m-1}
+\end{equation}
+\begin{equation}
+\gamma_{c}=1-(1-\tau)^{n-1} - \big(1-(1-\tau)^{n-m-1}\big)
+\end{equation}
+\begin{equation}
+\gamma_{c}=(1-\tau)^{n-1}\Big(\frac{1}{(1-\tau)^m} -1\Big)
+\end{equation}
+as the number of non contending nodes $m$ is a positive quantity then, $\gamma_{c}$ is strictly positive which concludes that there is strict reduction in the observed number of collision.
+\section{Amount of Wastage time reduced}
+%
+%\subsection{When to use WoD in Non saturated Case}
+%\subsubsection{Downlink Analysis}
+%Downlink service rate of WoD and regular Wi-Fi is given by $\mu_{wi-fi}, \mu_{WoD}$. It is assumed that there is equal downlink traffic arrival on LTE and Wi-Fi interface $\lambda_{LTE}=\lambda_{wi-fi}=\lambda$. Naive LAS and WoD LAS could be thought of two parallel server serving with individual queue (M/M/1 N/FIFO). Expected waiting time in system for both the scheme in downlink will be.
+%\begin{equation}
+%W_{NLAS}^{DL}=\frac{1}{2}\big[ W_{LTE} + W_{Wi-Fi}^{DL}\big]
+%\label{WifiDL}
+%\end{equation}
+%\begin{equation}
+%W_{WoD}^{DL}=\frac{1}{2}\big[ W_{LTE} + W^{'}_{Wi-Fi}\big]
+%\end{equation}
+%\begin{center}
+%$W_{LTE}= \frac{P_{o}	\Big[ \frac{\rho}{1-\rho} - \frac{(N+1)\rho^{N+1}}{1-\rho^{(N+1)}}\Big]}{\mu_{LTE}(1-P_{o})}$
+%\end{center}
+%
+%$\rho_{lte}=\frac{\lambda}{\mu_{lte}}$, similarly $W_{Wi-Fi}^{DL}$ and $W_{Wi-Fi}^{'}$ are obtained.  $P_{o}=\frac{1-\rho}{1-\rho^{N+1}}$
+%\subsubsection{Uplink Analysis}
+%In case of WoD the uplink is handled by only LTE. The arrival to Wi-Fi interface are redirected to LTE.  Hence the arrival rate for that interface is has became $2\lambda$.
+%
+%\begin{equation}
+%W_{WoD}^{UL}= \frac{P_{o}	\Big[ \frac{2\rho}{1-2\rho} - \frac{(N+1)(2\rho)^{N+1}}{1-(2\rho)^{(N+1)}}\Big]}{\mu_{LTE}(1-P_{o})}
+%\end{equation}
+%It is reasonable to assume that every nodes queue gets served in uplink at the rate of \big($\frac{\mu_{lte}}{m}$\big) in a scheduled environment with $m$ nodes. the waiting time of the system in $W_{NLAS}^{UL}$ can be written as
+%\begin{equation}
+%W_{NLAS}^{UL}=\frac{1}{2}\big[ W_{LTE} + W^{UL}_{Wi-Fi}\big]
+%\end{equation}
+%
+%\begin{equation}
+%W_{Wi-Fi}^{UL}= \frac{P_{o}	\Big[ \frac{\rho}{1-\rho} - \frac{(N+1)(\rho)^{N+1}}{1-(\rho)^{(N+1)}}\Big]}{m \, \mu_{Wi-Fi}(1-P_{o})}
+%\end{equation}
+%Since Distributed Coordination Function (DCF) which is used in Wi-Fi for channel sharing, shares the transmission opportunity equally among all the users here all the uplink users
+%\subsubsection{Delay saving in DL and UL}
+%\begin{equation}
+%D_{DL}=W_{NLAS}^{DL} - W_{WoD}^{DL} = \frac{1}{2}\Big[ W_{Wi-Fi}^{DL} - W_{Wi-Fi}^{'}\Big]
+%\end{equation}
+%It is clear that WoD will have lesser delay compared to NLAS in downlink i.e.,$D_{DL}\geq0$. Since the waiting time is inversely affected by service rate $\mu$, and $\mu_{WoD} > \mu_{wi-fi}$. on the other hand NLAS will have lesser delay compared to WoD in uplink. 
+%\begin{equation}
+%D_{UL}= W_{NLAS}^{UL} -W_{WoD}^{UL} =  \frac{1}{2}\Big[W_{LTE} + W_{Wi-Fi}^{UL}\Big] -W_{WoD}^{UL} 
+%\end{equation}
+%
+%
+%\subsubsection{When to Use WoD}
+%\todo{Need to Clearly mention that if N nodes in Wi-Fi network then m nodes are connected to LWA and (n-m) nodes are other Wi-Fi users in same channel}
+%Wi-Fi only in downlink is preferable compared to NLAS only when
+%\begin{equation}
+%D_{DL}+D_{UL}>0
+%\end{equation}
+%$D_{DL}$ is a strictly positive quantity as $m \geq 1$ and $D_{UL}$ is a negative quantity as in uplink NLAS supports two interface for uplink transmission, where as WoD supports only LTE interface for transmission.
+%
+%
+%WoD will outperform NLAS for a given $\lambda$, only when the number of non contending users $m$ increases. The minimum $m$ number of Nodes that has to use Wi-Fi only in downlink, which ensures that total system waiting time of WoD in lesser than Naive Link Aggregation strategy. System waiting time in WoD
+%\begin{equation}
+%a
+%\end{equation}
+%
+%Typically in a network downlink traffic is higher than uplink data requirement. This favors WoD to be a better traffic steering solution for LTE-Wi-Fi aggregation. this problem becomes more interesting if varying arrival rate is considered, which we make it as future work.
+%
+
+\end{document}
